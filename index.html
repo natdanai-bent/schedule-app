@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ตารางเรียน</title>
+<style>
+:root{
+  --navy:#6d84a8; --navy2:#8296b8; --gold:#e0b96f; --gold-soft:#f3e2bf;
+  --bg:#faf8f4; --card:#ffffff; --ink:#3a3a3a; --sub:#8a8a8a; --line:#e9e4d8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141414; --card:#1e1e1e; --ink:#f1eee4; --sub:#a8a397; --line:#33322c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141414; --card:#1e1e1e; --ink:#f1eee4; --sub:#a8a397; --line:#33322c;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+  font-family:"TH Sarabun New","Sarabun",system-ui,-apple-system,sans-serif;
+  font-size:17px; line-height:1.5;
+}
+header{
+  background:var(--navy); color:#fff; padding:18px 20px calc(18px + env(safe-area-inset-top,0px));
+  padding-top:calc(18px + env(safe-area-inset-top,0px));
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  border-bottom:3px solid var(--gold);
+}
+header h1{margin:0; font-size:1.35rem; font-weight:700; letter-spacing:.2px;}
+header .sub{color:var(--gold-soft); font-size:.85rem; margin-top:2px;}
+.btn{
+  background:var(--gold); color:var(--navy); border:none; padding:9px 16px; border-radius:6px;
+  font-weight:700; font-size:.95rem; cursor:pointer; font-family:inherit;
+}
+.btn:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+.btn.secondary{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.4);}
+.wrap{max-width:1100px; margin:0 auto; padding:18px 16px 60px;}
+
+.panel{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  padding:16px; margin-bottom:18px;
+}
+.panel h2{margin:0 0 12px; font-size:1.05rem; color:var(--navy);}
+.form-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+.field{display:flex; flex-direction:column; gap:4px;}
+.field label{font-size:.82rem; color:var(--sub);}
+.field input, .field select{
+  padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-family:inherit;
+  font-size:.95rem; background:var(--bg); color:var(--ink);
+}
+.colors{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+.colors input[type=radio]{display:none;}
+.colors label{
+  width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; display:block;
+}
+.colors input[type=radio]:checked + label{border-color:var(--ink);}
+.form-actions{margin-top:12px; display:flex; gap:10px;}
+
+.table-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--card);}
+table{border-collapse:collapse; width:100%; min-width:680px;}
+th,td{border:1px solid var(--line); text-align:center; vertical-align:top;}
+thead th{background:var(--navy); color:#fff; padding:10px 4px; font-weight:700; font-size:.85rem; min-width:78px;}
+thead th.break-before{border-left:4px solid var(--gold);}
+tbody th{background:var(--bg); color:var(--sub); font-weight:600; padding:8px 10px; width:80px; font-size:.88rem; white-space:nowrap;}
+td.cell{height:64px; width:78px; padding:4px; cursor:pointer; position:relative;}
+td.cell:hover{background:rgba(201,162,39,.08);}
+.entry{
+  border-radius:6px; padding:5px 6px; font-size:.8rem; text-align:left; height:100%;
+  display:flex; flex-direction:column; gap:1px; position:relative; color:#1c1c1c;
+}
+.entry .name{font-weight:700; line-height:1.15;}
+.entry .meta{opacity:.85; font-size:.72rem;}
+.entry .del{
+  position:absolute; top:2px; right:3px; background:rgba(0,0,0,.15); border:none; border-radius:50%;
+  width:16px; height:16px; font-size:.7rem; line-height:16px; cursor:pointer; color:#1c1c1c;
+}
+.empty-hint{color:var(--sub); font-size:1.1rem; opacity:.4;}
+td.cell.clash{background:repeating-linear-gradient(45deg, #fdecea, #fdecea 6px, #f8d7d2 6px, #f8d7d2 12px); padding:3px;}
+.clash-entry{display:flex; flex-direction:column; gap:3px; height:100%;}
+.clash-flag{font-size:.68rem; font-weight:800; color:#a5473b; text-align:left;}
+.clash-item{border-radius:5px; padding:3px 5px; font-size:.74rem; text-align:left; color:#1c1c1c; border:1px solid rgba(0,0,0,.15);}
+.clash-item .name{font-weight:700; display:block; line-height:1.1;}
+.clash-item .meta{opacity:.85; font-size:.68rem;}
+.footer-note{color:var(--sub); font-size:.85rem; margin-top:10px; text-align:center;}
+.tab-btn{
+  background:var(--card); color:var(--sub); border:1px solid var(--line); padding:8px 16px;
+  border-radius:7px; font-family:inherit; font-size:.92rem; cursor:pointer; font-weight:600;
+}
+.tab-btn.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+.print-title{display:none;}
+.toast{
+  position:fixed; left:50%; bottom:24px; transform:translate(-50%, 16px);
+  background:var(--navy); color:#fff; padding:10px 20px; border-radius:999px;
+  font-size:.9rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.18);
+  opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+  z-index:999; bottom:calc(24px + env(safe-area-inset-bottom,0px));
+}
+.toast.show{opacity:1; transform:translate(-50%, 0);}
+.toast.error{background:#a5473b;}
+
+@page{ size: landscape; margin: 10mm; }
+@media print{
+  header, .panel, .tabs, .footer-note{display:none;}
+  body{background:#fff; font-size:13px;}
+  .table-scroll{border:none; overflow:visible;}
+  table{min-width:0; width:100%;}
+  .print-title{display:block; font-size:1.2rem; font-weight:700; color:var(--navy); margin-bottom:10px; text-align:center;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ตารางเรียน</h1>
+    <div class="sub">สำหรับนักเรียน ปวช. / ปวส.</div>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="btn secondary" onclick="document.getElementById('fileInput').click()">นำเข้า Excel</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+    <button class="btn secondary" onclick="window.print()">พิมพ์</button>
+    <button class="btn" id="addBtn">+ เพิ่มวิชา</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" style="display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap;">
+    <button class="tab-btn active" id="tabByDay" onclick="switchTab('day')">ตารางเรียน (ตามวัน)</button>
+    <button class="tab-btn" id="tabByTeacher" onclick="switchTab('teacher')">ตารางสอนครู</button>
+    <span style="flex:1;"></span>
+    <label style="font-size:.85rem; color:var(--sub); display:flex; align-items:center; gap:6px;">
+      จำนวนคาบ/วัน
+      <select id="periodCountSelect" onchange="onPeriodCountChange()" style="padding:6px 8px; border:1px solid var(--line); border-radius:6px; font-family:inherit; background:var(--card); color:var(--ink);"></select>
+    </label>
+  </div>
+
+  <div class="panel" id="importPanel" style="display:none;">
+    <h2>นำเข้ารายวิชาจาก Excel</h2>
+    <p style="color:var(--sub); font-size:.88rem; margin-top:-6px;">
+      ไฟล์ควรมีคอลัมน์: รายวิชา, รหัสวิชา, ผู้สอน, สาขาวิชา (ไม่บังคับ), ชั้นปี (ไม่บังคับ เช่น ปวช.1), ห้อง (ไม่บังคับ), กลุ่มเรียน (ไม่บังคับ), วัน, เริ่มคาบ (เลข 1–10), จำนวนคาบ
+    </p>
+    <div id="importSummary" style="font-size:.9rem;"></div>
+    <div class="form-actions">
+      <button class="btn secondary" id="closeImportBtn" style="color:var(--navy); border-color:var(--line);">ปิด</button>
+    </div>
+  </div>
+
+  <div class="panel" id="formPanel" style="display:none;">
+    <h2>เพิ่ม / แก้ไขรายวิชา</h2>
+    <div class="form-grid">
+      <div class="field"><label>รหัสวิชา</label><input id="fCode" placeholder="20105-2019"></div>
+      <div class="field"><label>รายวิชา</label><input id="fName" placeholder="เช่น เครื่องรับวิทยุ"></div>
+      <div class="field"><label>ผู้สอน</label><input id="fTeacher" placeholder="ชื่อครู"></div>
+      <div class="field"><label>สาขาวิชา</label>
+        <select id="fDept">
+          <option>อิเล็กทรอนิกส์</option>
+          <option>ไฟฟ้า</option>
+          <option>การตลาด</option>
+          <option>สามัญ</option>
+          <option>พื้นฐาน</option>
+          <option>เทคโนโลยีสารสนเทศ</option>
+          <option>ช่างยนต์ไฟฟ้า</option>
+          <option>ช่างกลโรงงาน</option>
+        </select>
+      </div>
+      <div class="field"><label>ชั้นปี</label>
+        <select id="fYear"><option>ปวช.1</option><option>ปวช.2</option><option>ปวช.3</option><option>ปวส.1</option><option>ปวส.2</option></select>
+      </div>
+      <div class="field"><label>กลุ่มเรียน</label><input id="fGroup" placeholder="เช่น ชอ / 1/2"></div>
+      <div class="field"><label>ห้อง</label><input id="fRoom" placeholder="ห้อง"></div>
+      <div class="field"><label>วัน</label>
+        <select id="fDay"><option>จันทร์</option><option>อังคาร</option><option>พุธ</option><option>พฤหัสบดี</option><option>ศุกร์</option></select>
+      </div>
+      <div class="field"><label>เริ่มคาบ</label>
+        <select id="fStart"></select>
+      </div>
+      <div class="field"><label>จำนวนคาบ</label>
+        <select id="fSpan"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
+      </div>
+    </div>
+    <div class="colors" id="colorPicker" style="margin-top:12px;"></div>
+    <div class="form-actions">
+      <button class="btn" id="saveBtn">บันทึก</button>
+      <button class="btn secondary" id="cancelBtn" style="color:var(--navy); border-color:var(--line);">ยกเลิก</button>
+    </div>
+  </div>
+
+  <div id="dayView">
+    <div class="panel" style="padding:12px 16px;">
+      <div class="field">
+        <label>ชั้นปี</label>
+        <select id="yearSelect" onchange="renderGrid()"></select>
+      </div>
+    </div>
+    <div class="print-title" id="dayPrintTitle"></div>
+    <div class="table-scroll">
+      <table id="grid"></table>
+    </div>
+    <div class="footer-note">แตะช่องว่างเพื่อเพิ่มวิชา • แตะปุ่ม × เพื่อลบวิชา • ข้อมูลบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น <span id="lastSavedLabel" style="font-weight:600;"></span></div>
+  </div>
+
+  <div id="teacherView" style="display:none;">
+    <div class="panel" style="padding:12px 16px;">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr auto;">
+        <div class="field">
+          <label>สาขาวิชา</label>
+          <select id="deptSelect" onchange="populateTeacherSelect(); renderTeacherGrid();"></select>
+        </div>
+        <div class="field">
+          <label>เลือกครูผู้สอน</label>
+          <select id="teacherSelect" onchange="renderTeacherGrid()"></select>
+        </div>
+        <div class="field" style="justify-content:flex-end;">
+          <label>&nbsp;</label>
+          <div id="teacherLoad" style="font-weight:700; color:var(--navy); padding-top:6px;"></div>
+        </div>
+      </div>
+      <div style="font-size:.78rem; color:var(--sub); margin-top:8px;">เลือกสาขาเพื่อกรองรายชื่อครูเท่านั้น — ตารางที่แสดงจะรวมทุกวิชาที่ครูคนนี้สอน แม้จะเป็นวิชาต่างสาขา (จะมีชื่อสาขากำกับไว้ในวงเล็บถ้าไม่ตรงกับสาขาที่เลือก) แตะช่องว่างเพื่อเพิ่มวิชาให้ครูคนนี้ได้เลย</div>
+    </div>
+    <div id="teacherClashWarning" style="display:none; background:#fdecea; color:#a5473b; border:1px solid #e3b6ae; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:.9rem; font-weight:600;"></div>
+    <div class="print-title" id="teacherPrintTitle"></div>
+    <div class="table-scroll">
+      <table id="teacherGrid"></table>
+    </div>
+    <div class="footer-note">ตารางนี้สร้างจากช่อง “ผู้สอน” ของแต่ละวิชาในตารางเรียนโดยอัตโนมัติ</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const DAYS = ["จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์"];
+const YEARS = ["ปวช.1","ปวช.2","ปวช.3","ปวส.1","ปวส.2"];
+const YEAR_ALIASES = {
+  "ปวช.1":"ปวช.1","ปวช1":"ปวช.1","ปวช. 1":"ปวช.1",
+  "ปวช.2":"ปวช.2","ปวช2":"ปวช.2","ปวช. 2":"ปวช.2",
+  "ปวช.3":"ปวช.3","ปวช3":"ปวช.3","ปวช. 3":"ปวช.3",
+  "ปวส.1":"ปวส.1","ปวส1":"ปวส.1","ปวส. 1":"ปวส.1",
+  "ปวส.2":"ปวส.2","ปวส2":"ปวส.2","ปวส. 2":"ปวส.2"
+};
+const DAY_ALIASES = {
+  "จ":"จันทร์","จันทร์":"จันทร์","monday":"จันทร์","mon":"จันทร์",
+  "อ":"อังคาร","อังคาร":"อังคาร","tuesday":"อังคาร","tue":"อังคาร",
+  "พ":"พุธ","พุธ":"พุธ","wednesday":"พุธ","wed":"พุธ",
+  "พฤ":"พฤหัสบดี","พฤหัส":"พฤหัสบดี","พฤหัสบดี":"พฤหัสบดี","thursday":"พฤหัสบดี","thu":"พฤหัสบดี",
+  "ศ":"ศุกร์","ศุกร์":"ศุกร์","friday":"ศุกร์","fri":"ศุกร์"
+};
+let TIMES = [];
+const COLORS = ["#F5D6BA","#BFE3D0","#B9D6EC","#F3C2CB","#D9C6F0","#FBE2B8","#A9DEDC","#E6D4B0"];
+const STORE_KEY = "schedule-entries-v1";
+const PERIOD_COUNT_KEY = "schedule-period-count-v1";
+let entries = [];
+let editingId = null;
+
+function fmtTime(mins){
+  const h = Math.floor(mins/60), m = mins%60;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+}
+function buildTimes(count){
+  const list = [];
+  let mins = 8*60+30; // 08:30 start
+  for(let i=0;i<count;i++){
+    if(i===4){ mins += 60; } // lunch break 12:30-13:30 between period 4 and period 5
+    const start = mins, end = mins+60;
+    list.push(fmtTime(start)+' - '+fmtTime(end));
+    mins = end;
+  }
+  return list;
+}
+
+function loadPeriodCount(){
+  let n = 10;
+  try{
+    const raw = localStorage.getItem(PERIOD_COUNT_KEY);
+    if(raw){ n = parseInt(raw,10) || 10; }
+  }catch(e){}
+  TIMES = buildTimes(n);
+}
+function savePeriodCount(n){
+  try{ localStorage.setItem(PERIOD_COUNT_KEY, String(n)); }catch(e){}
+}
+function populatePeriodCountSelect(){
+  const sel = document.getElementById('periodCountSelect');
+  const opts = [6,7,8,9,10,11,12];
+  sel.innerHTML = opts.map(n=>`<option value="${n}">${n} คาบ</option>`).join('');
+  sel.value = String(TIMES.length);
+}
+function onPeriodCountChange(){
+  const n = parseInt(document.getElementById('periodCountSelect').value,10);
+  TIMES = buildTimes(n);
+  savePeriodCount(n);
+  buildStartOptions();
+  renderGrid();
+  renderTeacherGrid();
+}
+
+function loadEntries(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  }catch(e){ entries = []; }
+}
+function saveEntries(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+    localStorage.setItem(STORE_KEY+'-savedAt', String(Date.now()));
+    showSavedToast();
+    updateLastSavedLabel();
+  }catch(e){
+    showSavedToast('บันทึกไม่สำเร็จ (พื้นที่จัดเก็บเต็มหรือถูกปิดกั้น)', true);
+  }
+}
+
+let toastTimer = null;
+function showSavedToast(msg, isError){
+  const el = document.getElementById('saveToast');
+  el.textContent = msg || '✓ บันทึกแล้ว';
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.classList.remove('show'); }, 1800);
+}
+
+function updateLastSavedLabel(){
+  const el = document.getElementById('lastSavedLabel');
+  if(!el) return;
+  let ts = null;
+  try{ ts = localStorage.getItem(STORE_KEY+'-savedAt'); }catch(e){}
+  if(!ts){ el.textContent = ''; return; }
+  const d = new Date(parseInt(ts,10));
+  const hh = (d.getHours()<10?'0':'')+d.getHours();
+  const mm = (d.getMinutes()<10?'0':'')+d.getMinutes();
+  el.textContent = `บันทึกล่าสุด ${hh}:${mm} น.`;
+}
+
+function buildStartOptions(){
+  const sel = document.getElementById('fStart');
+  sel.innerHTML = TIMES.map((t,i)=>`<option value="${i}">คาบ ${i+1} (${t})</option>`).join('');
+}
+function buildColorPicker(){
+  const wrap = document.getElementById('colorPicker');
+  wrap.innerHTML = COLORS.map((c,i)=>`
+    <input type="radio" name="color" id="c${i}" value="${c}" ${i===0?'checked':''}>
+    <label for="c${i}" style="background:${c}"></label>
+  `).join('');
+}
+
+function populateYearSelect(){
+  const sel = document.getElementById('yearSelect');
+  if(sel.options.length) return; // fixed list, populate once
+  sel.innerHTML = YEARS.map(y=>`<option value="${y}">${y}</option>`).join('');
+}
+
+function renderGrid(){
+  const table = document.getElementById('grid');
+  const year = document.getElementById('yearSelect').value;
+  const scoped = entries.filter(e=>e.year===year);
+  document.getElementById('dayPrintTitle').textContent = `ตารางเรียน ${year}`;
+  let html = '<thead><tr>' + periodHeaderRow() + '</tr></thead><tbody>';
+  for(const day of DAYS){
+    html += `<tr><th>${day}</th>`;
+    const occupied = new Set(); // period indices covered by an earlier span in this day's row
+    for(let p=0;p<TIMES.length;p++){
+      if(occupied.has(p)){ continue; }
+      const entry = scoped.find(e=> e.day===day && e.start===p);
+      if(entry){
+        for(let k=1;k<entry.span;k++){ occupied.add(p+k); }
+        html += `<td class="cell" colspan="${entry.span}" data-day="${day}" data-period="${p}">
+          <div class="entry" style="background:${entry.color}" onclick="event.stopPropagation(); editEntry('${entry.id}')">
+            <span class="del" onclick="event.stopPropagation(); deleteEntry('${entry.id}')">×</span>
+            <span class="name">${entry.code?escapeHtml(entry.code)+' ':''}${escapeHtml(entry.name)}</span>
+            <span class="meta">${entry.teacher?escapeHtml(entry.teacher):''}</span>
+            <span class="meta">${entry.room?('ห้อง '+escapeHtml(entry.room)):''}${entry.group?(' · '+escapeHtml(entry.group)):''}</span>
+          </div>
+        </td>`;
+      } else {
+        html += `<td class="cell" data-day="${day}" data-period="${p}" onclick="quickAdd('${day}',${p})"><div class="empty-hint">+</div></td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function periodHeaderRow(){
+  return '<th>วัน / คาบ</th>' + TIMES.map((t,i)=>`<th${i===4?' class="break-before" title="หลังพักกลางวัน 12:30-13:30"':''}>คาบ ${i+1}<br>${t}</th>`).join('');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function openForm(){ document.getElementById('formPanel').style.display='block'; }
+function closeForm(){
+  document.getElementById('formPanel').style.display='none';
+  editingId = null;
+  document.getElementById('fName').value='';
+  document.getElementById('fCode').value='';
+  document.getElementById('fTeacher').value='';
+  document.getElementById('fDept').value='อิเล็กทรอนิกส์';
+  document.getElementById('fYear').value = document.getElementById('yearSelect').value;
+  document.getElementById('fGroup').value='';
+  document.getElementById('fRoom').value='';
+  document.getElementById('fSpan').value='1';
+}
+
+function quickAdd(day, period){
+  closeForm();
+  document.getElementById('fDay').value = day;
+  document.getElementById('fStart').value = period;
+  document.getElementById('fYear').value = document.getElementById('yearSelect').value;
+  openForm();
+  document.getElementById('fName').focus();
+}
+
+function quickAddTeacher(day, period, teacher){
+  closeForm();
+  document.getElementById('fDay').value = day;
+  document.getElementById('fStart').value = period;
+  document.getElementById('fTeacher').value = teacher;
+  const dept = document.getElementById('deptSelect').value;
+  if(dept){ document.getElementById('fDept').value = dept; }
+  openForm();
+  document.getElementById('fName').focus();
+}
+
+function editEntry(id){
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  editingId = id;
+  document.getElementById('fName').value = e.name;
+  document.getElementById('fCode').value = e.code||'';
+  document.getElementById('fTeacher').value = e.teacher||'';
+  ensureDeptOption(e.dept);
+  document.getElementById('fDept').value = e.dept||'อิเล็กทรอนิกส์';
+  document.getElementById('fYear').value = e.year||'ปวช.1';
+  document.getElementById('fGroup').value = e.group||'';
+  document.getElementById('fRoom').value = e.room||'';
+  document.getElementById('fDay').value = e.day;
+  document.getElementById('fStart').value = e.start;
+  document.getElementById('fSpan').value = e.span;
+  const radio = document.querySelector(`input[name=color][value="${e.color}"]`);
+  if(radio) radio.checked = true;
+  openForm();
+}
+
+const DEPTS = ["อิเล็กทรอนิกส์","ไฟฟ้า","การตลาด","สามัญ","พื้นฐาน","เทคโนโลยีสารสนเทศ","ช่างยนต์ไฟฟ้า","ช่างกลโรงงาน"];
+function ensureDeptOption(dept){
+  if(!dept || DEPTS.includes(dept)) return;
+  const sel = document.getElementById('fDept');
+  if(![...sel.options].some(o=>o.value===dept)){
+    const opt = document.createElement('option');
+    opt.value = dept; opt.textContent = dept + ' (เดิม)';
+    sel.appendChild(opt);
+  }
+}
+
+function deleteEntry(id){
+  entries = entries.filter(e=>e.id!==id);
+  saveEntries();
+  renderGrid();
+  renderTeacherGrid();
+}
+
+function periodsOverlap(aStart, aSpan, bStart, bSpan){
+  return aStart < bStart+bSpan && bStart < aStart+aSpan;
+}
+function findTeacherClash(teacher, day, start, span, excludeId){
+  if(!teacher) return null;
+  return entries.find(e=> e.id!==excludeId && e.teacher===teacher && e.day===day && periodsOverlap(start, span, e.start, e.span));
+}
+
+function saveEntry(){
+  const name = document.getElementById('fName').value.trim();
+  if(!name){ document.getElementById('fName').focus(); return; }
+  const day = document.getElementById('fDay').value;
+  const start = parseInt(document.getElementById('fStart').value,10);
+  const span = parseInt(document.getElementById('fSpan').value,10);
+  const color = (document.querySelector('input[name=color]:checked')||{}).value || COLORS[0];
+  const code = document.getElementById('fCode').value.trim();
+  const teacher = document.getElementById('fTeacher').value.trim();
+  const dept = document.getElementById('fDept').value.trim();
+  const year = document.getElementById('fYear').value;
+  const group = document.getElementById('fGroup').value.trim();
+  const room = document.getElementById('fRoom').value.trim();
+
+  const clash = findTeacherClash(teacher, day, start, span, editingId);
+  if(clash){
+    const ok = confirm(`⚠ ครู "${teacher}" มีสอนวิชา "${clash.code?clash.code+' ':''}${clash.name}" (${clash.year}${clash.group?(' '+clash.group):''}) อยู่แล้วในคาบนี้\n\nต้องการบันทึกทับซ้อนหรือไม่?`);
+    if(!ok) return;
+  }
+
+  entries = entries.filter(e=>{
+    if(editingId && e.id===editingId) return false;
+    if(e.day!==day || e.year!==year) return true;
+    const overlap = periodsOverlap(start, span, e.start, e.span);
+    return !overlap;
+  });
+
+  const id = editingId || (Date.now()+'-'+Math.random().toString(36).slice(2,7));
+  entries.push({id, name, code, teacher, dept, year, group, room, day, start, span, color});
+  saveEntries();
+  renderGrid();
+  renderTeacherGrid();
+  closeForm();
+}
+
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  if(document.getElementById('formPanel').style.display==='block'){ closeForm(); }
+  else { openForm(); }
+});
+document.getElementById('saveBtn').addEventListener('click', saveEntry);
+document.getElementById('cancelBtn').addEventListener('click', closeForm);
+
+// ---- teacher color mapping (consistent color per teacher name) ----
+function colorForTeacher(name){
+  if(!name) return COLORS[0];
+  let h = 0;
+  for(let i=0;i<name.length;i++){ h = (h*31 + name.charCodeAt(i)) >>> 0; }
+  return COLORS[h % COLORS.length];
+}
+
+// ---- tabs ----
+function switchTab(which){
+  const day = document.getElementById('dayView');
+  const teacher = document.getElementById('teacherView');
+  document.getElementById('tabByDay').classList.toggle('active', which==='day');
+  document.getElementById('tabByTeacher').classList.toggle('active', which==='teacher');
+  day.style.display = which==='day' ? 'block' : 'none';
+  teacher.style.display = which==='teacher' ? 'block' : 'none';
+  if(which==='teacher'){ populateDeptSelect(); populateTeacherSelect(); renderTeacherGrid(); }
+}
+
+function populateDeptSelect(){
+  const sel = document.getElementById('deptSelect');
+  const current = sel.value;
+  const depts = [...new Set(entries.map(e=>e.dept).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  let opts = '<option value="">ทั้งหมด</option>' + depts.map(d=>`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+  sel.innerHTML = opts;
+  if(depts.includes(current)) sel.value = current;
+  else if(depts.includes('อิเล็กทรอนิกส์')) sel.value = 'อิเล็กทรอนิกส์';
+}
+
+function populateTeacherSelect(){
+  const sel = document.getElementById('teacherSelect');
+  const dept = document.getElementById('deptSelect').value;
+  const current = sel.value;
+  const scoped = dept ? entries.filter(e=>e.dept===dept) : entries;
+  const names = [...new Set(scoped.map(e=>e.teacher).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  sel.innerHTML = names.length ? names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')
+                                : '<option value="">— ไม่พบครูในสาขานี้ —</option>';
+  if(names.includes(current)) sel.value = current;
+}
+
+function renderTeacherGrid(){
+  const table = document.getElementById('teacherGrid');
+  const teacher = document.getElementById('teacherSelect').value;
+  const dept = document.getElementById('deptSelect').value;
+  const mine = entries.filter(e=>e.teacher===teacher);
+  document.getElementById('teacherLoad').textContent = teacher ? `รวม ${mine.reduce((s,e)=>s+e.span,0)} คาบ/สัปดาห์ (ทุกสาขาที่สอน)` : '';
+  document.getElementById('teacherPrintTitle').textContent = teacher ? `ตารางสอนครู: ${teacher}` : 'ตารางสอนครู';
+
+  let clashCount = 0;
+  let html = '<thead><tr>' + periodHeaderRow() + '</tr></thead><tbody>';
+  for(const day of DAYS){
+    html += `<tr><th>${day}</th>`;
+    // group this day's entries into clusters of mutually overlapping periods
+    const dayEntries = mine.filter(e=>e.day===day).sort((a,b)=>a.start-b.start);
+    const clusters = [];
+    for(const e of dayEntries){
+      const last = clusters[clusters.length-1];
+      if(last && e.start < last.end){ last.items.push(e); last.end = Math.max(last.end, e.start+e.span); }
+      else { clusters.push({start:e.start, end:e.start+e.span, items:[e]}); }
+    }
+    const occupied = new Set();
+    for(let p=0;p<TIMES.length;p++){
+      if(occupied.has(p)){ continue; }
+      const cluster = clusters.find(c=> c.start===p);
+      if(cluster){
+        const span = cluster.end - cluster.start;
+        for(let k=1;k<span;k++){ occupied.add(p+k); }
+        if(cluster.items.length>1){
+          clashCount++;
+          html += `<td class="cell clash" colspan="${span}">
+            <div class="entry clash-entry" style="cursor:default;">
+              <span class="clash-flag">⚠ ตารางชนกัน</span>
+              ${cluster.items.map(entry=>`<div class="clash-item" style="background:${entry.color}; cursor:pointer; position:relative;" onclick="editEntry('${entry.id}')">
+                <span class="del" onclick="event.stopPropagation(); deleteEntry('${entry.id}')">×</span>
+                <span class="name">${entry.code?escapeHtml(entry.code)+' ':''}${escapeHtml(entry.name)}</span>
+                <span class="meta">${entry.dept?escapeHtml(entry.dept):''}${entry.year?(' · '+escapeHtml(entry.year)):''}${entry.group?(' · '+escapeHtml(entry.group)):''}${entry.room?(' · ห้อง '+escapeHtml(entry.room)):''}</span>
+              </div>`).join('')}
+            </div>
+          </td>`;
+        } else {
+          const entry = cluster.items[0];
+          const outOfDept = dept && entry.dept && entry.dept!==dept;
+          html += `<td class="cell" colspan="${span}">
+            <div class="entry" style="background:${entry.color}" onclick="editEntry('${entry.id}')">
+              <span class="del" onclick="event.stopPropagation(); deleteEntry('${entry.id}')">×</span>
+              <span class="name">${entry.code?escapeHtml(entry.code)+' ':''}${escapeHtml(entry.name)}</span>
+              <span class="meta">${outOfDept?('('+escapeHtml(entry.dept)+') '):''}${entry.year?escapeHtml(entry.year):''}${entry.group?(' · '+escapeHtml(entry.group)):''}</span>
+              <span class="meta">${entry.room?('ห้อง '+escapeHtml(entry.room)):''}</span>
+            </div>
+          </td>`;
+        }
+      } else {
+        html += `<td class="cell" onclick="quickAddTeacher('${day}',${p},'${escapeHtml(teacher)}')"><div class="empty-hint">+</div></td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+  const warn = document.getElementById('teacherClashWarning');
+  warn.style.display = clashCount ? 'block' : 'none';
+  warn.textContent = clashCount ? `⚠ พบตารางสอนชนกัน ${clashCount} คาบ — ครูมีวิชาซ้อนกันมากกว่า 1 วิชาในคาบเดียวกัน` : '';
+}
+
+function countAllClashes(){
+  let count = 0;
+  const byTeacherDay = {};
+  entries.forEach(e=>{
+    if(!e.teacher) return;
+    const key = e.teacher+'|'+e.day;
+    (byTeacherDay[key] = byTeacherDay[key] || []).push(e);
+  });
+  Object.values(byTeacherDay).forEach(list=>{
+    list.sort((a,b)=>a.start-b.start);
+    for(let i=0;i<list.length;i++){
+      for(let j=i+1;j<list.length;j++){
+        if(periodsOverlap(list[i].start, list[i].span, list[j].start, list[j].span)) count++;
+      }
+    }
+  });
+  return count;
+}
+
+// ---- excel import ----
+function findKey(row, candidates){
+  const keys = Object.keys(row);
+  for(const c of candidates){
+    const hit = keys.find(k => k.toString().trim().toLowerCase() === c);
+    if(hit) return hit;
+  }
+  return null;
+}
+function parsePeriod(val){
+  if(val===undefined||val===null||val==='') return null;
+  const s = String(val).trim();
+  const n = parseInt(s,10);
+  if(!isNaN(n) && n>=1 && n<=TIMES.length) return n-1;
+  const idx = TIMES.indexOf(s);
+  return idx>=0 ? idx : null;
+}
+function parseDay(val){
+  if(!val) return null;
+  const s = String(val).trim().toLowerCase();
+  return DAY_ALIASES[s] || DAY_ALIASES[String(val).trim()] || null;
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const wb = XLSX.read(evt.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      importRows(rows);
+    }catch(err){
+      showImportSummary('อ่านไฟล์ไม่สำเร็จ: ' + err.message, true);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+function importRows(rows){
+  if(!rows.length){ showImportSummary('ไม่พบข้อมูลในไฟล์', true); return; }
+  const sample = rows[0];
+  const kName = findKey(sample, ['รายวิชา','วิชา','subject','name']);
+  const kCode = findKey(sample, ['รหัสวิชา','รหัส','code']);
+  const kTeacher = findKey(sample, ['ผู้สอน','ครู','ครูผู้สอน','teacher']);
+  const kDept = findKey(sample, ['สาขาวิชา','สาขา','แผนก','department','dept']);
+  const kYear = findKey(sample, ['ชั้นปี','ระดับชั้น','year','level']);
+  const kGroup = findKey(sample, ['กลุ่มเรียน','ระดับ','group','class']);
+  const kRoom = findKey(sample, ['ห้อง','room']);
+  const kDay = findKey(sample, ['วัน','day']);
+  const kStart = findKey(sample, ['เริ่มคาบ','คาบเริ่ม','คาบ','period','start']);
+  const kSpan = findKey(sample, ['จำนวนคาบ','span','periods']);
+
+  if(!kName || !kDay || !kStart){
+    showImportSummary('ไม่พบคอลัมน์ที่จำเป็น (ต้องมีอย่างน้อย: รายวิชา, วัน, เริ่มคาบ)', true);
+    return;
+  }
+
+  const replace = confirm('แทนที่ตารางปัจจุบันทั้งหมดด้วยข้อมูลที่นำเข้า?\n(กด "ยกเลิก" เพื่อเพิ่มต่อจากตารางเดิม)');
+  const imported = [];
+  let skipped = 0;
+  rows.forEach(row=>{
+    const name = String(row[kName]||'').trim();
+    const day = parseDay(row[kDay]);
+    const start = parsePeriod(row[kStart]);
+    if(!name || !day || start===null){ skipped++; return; }
+    const teacher = kTeacher ? String(row[kTeacher]||'').trim() : '';
+    const rawYear = kYear ? String(row[kYear]||'').trim() : '';
+    const year = YEAR_ALIASES[rawYear] || YEAR_ALIASES[rawYear.toLowerCase()] || (YEARS.includes(rawYear) ? rawYear : document.getElementById('yearSelect').value);
+    imported.push({
+      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+      name,
+      code: kCode ? String(row[kCode]||'').trim() : '',
+      teacher,
+      dept: kDept ? String(row[kDept]||'').trim() : '',
+      year,
+      group: kGroup ? String(row[kGroup]||'').trim() : '',
+      room: kRoom ? String(row[kRoom]||'').trim() : '',
+      day, start,
+      span: kSpan ? (parseInt(row[kSpan],10)||1) : 1,
+      color: colorForTeacher(teacher)
+    });
+  });
+
+  if(replace){ entries = imported; }
+  else{
+    imported.forEach(ne=>{
+      entries = entries.filter(e=> !(e.day===ne.day && e.year===ne.year && ne.start < e.start+e.span && e.start < ne.start+ne.span));
+    });
+    entries = entries.concat(imported);
+  }
+  saveEntries();
+  renderGrid();
+  populateTeacherSelect();
+  const clashes = countAllClashes();
+  showImportSummary(`นำเข้าสำเร็จ ${imported.length} รายวิชา${skipped?` (ข้าม ${skipped} แถวที่ข้อมูลไม่ครบ)`:''}${clashes?` — ⚠ พบครูสอนชนตาราง ${clashes} คาบ ดูรายละเอียดที่แท็บ “ตารางสอนครู”`:''}`, false);
+}
+
+function showImportSummary(msg, isError){
+  document.getElementById('importPanel').style.display = 'block';
+  const el = document.getElementById('importSummary');
+  el.textContent = msg;
+  el.style.color = isError ? '#a5473b' : 'var(--navy)';
+}
+document.getElementById('closeImportBtn').addEventListener('click', ()=>{
+  document.getElementById('importPanel').style.display = 'none';
+});
+
+loadPeriodCount();
+populatePeriodCountSelect();
+populateYearSelect();
+buildStartOptions();
+buildColorPicker();
+loadEntries();
+renderGrid();
+populateDeptSelect();
+populateTeacherSelect();
+updateLastSavedLabel();
+</script>
+<div id="saveToast" class="toast"></div>
+</body>
+</html>
